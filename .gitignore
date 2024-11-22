@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# KDevelop files
+TapeDataInterface/.kdev4
+TapeDataInterface/build/
+TapeDataInterface/TapeDataInterface.kdev4
+TapeDataInterface/.*.kate-swp
