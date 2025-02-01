@@ -31,8 +31,10 @@
 *.out
 *.app
 
-# KDevelop files
-TapeDataInterface/.kdev4
-TapeDataInterface/build/
-TapeDataInterface/TapeDataInterface.kdev4
-TapeDataInterface/.*.kate-swp
+# VS Code configuration files
+.vscode/
+yadro-test-task-tu.code-workspace
+CMakePresets.json
+
+# CMake build files
+build/
