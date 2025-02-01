@@ -1,6 +1,8 @@
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 
 #include "TapeDev.hpp"
 #include "TapeDevExceptions.hpp"
@@ -30,7 +32,6 @@ TapeDev::TapeDev(const std::filesystem::path& t_tape_file_path,
 }
 
 int TapeDev::read() {
-  // TODO: добавить задержку чтения (cfg.read_delay)
   if (m_operation_mode == TapeDevOperationMode::Read ||
       m_operation_mode == TapeDevOperationMode::ReadWrite) {
     if (!m_end_of_tape_flag) {
@@ -93,10 +94,11 @@ int TapeDev::read() {
     throw InvalidOperationException(
         "Чтение невозможно. Устройство работает в режиме только запись.");
   }
+  // Эмулируем время, необходимое устройству для выполнения чтения с ленты.
+  std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_conf.read_delay));
 }
 
 void TapeDev::write(int t_value) {
-  // TODO: добавить задержку записи (cfg.write_delay)
   if (m_operation_mode == TapeDevOperationMode::Write) {
     std::string val_str = std::to_string(t_value);
     // TODO: нужно учесть ситуацию записи последнего значения в файл. В этом
@@ -171,11 +173,12 @@ void TapeDev::write(int t_value) {
     throw InvalidOperationException(
         "Запись невозможна. Устройство работает в режиме только чтение.");
   }
+  // Эмулируем время, необходимое устройству для выполнения записи на ленту.
+  std::this_thread::sleep_for(
+      std::chrono::milliseconds(m_dev_conf.write_delay));
 }
 
 void TapeDev::shiftLeft() {
-  // TODO: добавить задержку сдвига ленты (cfg.shift_delay)
-
   // Проверяем на то, что считывающая/записывающая магнитная головка уже
   // находится в начале ленты.
   if (m_tape_begin_flag) {
@@ -207,11 +210,13 @@ void TapeDev::shiftLeft() {
     m_tape_file.seekg(-2, std::ios::cur);
     m_tape_file.seekp(-2, std::ios::cur);
   }
+  // Эмулируем время, необходимое устройству для выполнения сдвига на одну
+  // позицию влево.
+  std::this_thread::sleep_for(
+      std::chrono::milliseconds(m_dev_conf.shift_delay));
 }
 
 void TapeDev::shiftRight() {
-  // TODO: добавить задержку сдвига ленты (cfg.shift_delay)
-
   // Проверяем на то, что считывающая/записывающая магнитная головка уже
   // находится в конце ленты/.
   if (m_end_of_tape_flag) {
@@ -240,15 +245,25 @@ void TapeDev::shiftRight() {
       break;
     }
   }
+  // Эмулируем время, необходимое устройству для выполнения сдвига на одну
+  // позицию вправо.
+  std::this_thread::sleep_for(
+      std::chrono::milliseconds(m_dev_conf.shift_delay));
 }
 
 void TapeDev::rewind() {
   // Очищаем возможные предыдущие ошибки ввода/вывода.
   m_tape_file.clear();
-  // Устанавливаем курсор файла ленты в начало.
+  // Устанавливаем курсоры файла ленты в начало.
   m_tape_file.seekg(0, std::ios::beg);
+  m_tape_file.seekp(0, std::ios::beg);
   // Отмечаем в состоянии объекта, что находимся в начале ленты.
   m_tape_begin_flag = true;
+
+  // Эмулируем время, необходимое устройству для выполнения перемотки ленты в
+  // начало.
+  std::this_thread::sleep_for(
+      std::chrono::milliseconds(m_dev_conf.rewind_delay));
 }
 
 int TapeDev::getMemBufCurrValue() const noexcept {
