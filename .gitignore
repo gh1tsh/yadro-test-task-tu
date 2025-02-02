@@ -38,3 +38,6 @@ CMakePresets.json
 
 # CMake build files
 build/
+
+# VS Code Counter cache directory
+.VSCodeCounter/
