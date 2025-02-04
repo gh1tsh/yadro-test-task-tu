@@ -5,9 +5,8 @@
 #include "TapeDevConfig.hpp"
 #include "utils.hpp"
 
-TapeDevConfig::TapeDevConfig(const std::filesystem::path& t_cfg_path,
-                             size_t t_mem_buf_size, int t_read_delay,
-                             int t_write_delay, int t_shift_delay,
+TapeDevConfig::TapeDevConfig(const std::filesystem::path& t_cfg_path, size_t t_mem_buf_size,
+                             int t_read_delay, int t_write_delay, int t_shift_delay,
                              int t_rewind_delay)
     : cfg_path(t_cfg_path),
       mem_buf_size(t_mem_buf_size),
@@ -24,14 +23,13 @@ std::string TapeDevConfig::to_string() const {
          "\nTapeRewindDelay: " + std::to_string(rewind_delay);
 }
 
-const TapeDevConfig parseTapeConfigFile(
-    const std::filesystem::path& t_cfgFilePath) {
+const TapeDevConfig parseTapeConfigFile(const std::filesystem::path& t_cfgFilePath) {
 
   std::ifstream input(t_cfgFilePath);
 
   if (!input.is_open()) {
-    throw std::runtime_error("Не удалось открыть для чтения файл '" +
-                             t_cfgFilePath.string() + "'.");
+    throw std::runtime_error("Не удалось открыть для чтения файл '" + t_cfgFilePath.string() +
+                             "'.");
   }
 
   TapeDevConfig cfg;
@@ -60,17 +58,15 @@ const TapeDevConfig parseTapeConfigFile(
         value = std::stoi(trim_copy(splitAfterDelimiter(cfgOption)));
         cfg.rewind_delay = value;
       } else {
-        throw std::invalid_argument(
-            "Неизвестная опция в конфигурационном файле '" +
-            t_cfgFilePath.string() + "'.");
+        throw std::invalid_argument("Неизвестная опция в конфигурационном файле '" +
+                                    t_cfgFilePath.string() + "'.");
       }
     } catch (const std::invalid_argument& e) {
       // NOTE: в этом месте можно добавить нечто вроде логирования (например,
       // просто выводом в терминал), чтобы объяснять, что именно не так в
       // конфигурационном файле.
-      throw std::runtime_error(
-          "Недопустимое значение в конфигурационном файле '" +
-          t_cfgFilePath.string() + "'.");
+      throw std::runtime_error("Недопустимое значение в конфигурационном файле '" +
+                               t_cfgFilePath.string() + "'.");
     } catch (const std::out_of_range& e) {
       throw std::runtime_error(
           "Значение, указанное в конфигурационном файле, выходит за границы "

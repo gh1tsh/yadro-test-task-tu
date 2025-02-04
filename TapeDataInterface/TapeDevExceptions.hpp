@@ -6,9 +6,7 @@
 
 class EndOfTapeException : public std::exception {
  public:
-  const char* what() const noexcept override {
-    return "Достигнут конец ленты.";
-  }
+  const char* what() const noexcept override { return "Достигнут конец ленты."; }
 };
 
 class BadTapeException : public std::runtime_error {
@@ -20,22 +18,17 @@ class BadTapeException : public std::runtime_error {
 
   BadTapeException(const std::string& msg) : std::runtime_error(msg) {}
 
-  const char* what() const noexcept override {
-    return std::runtime_error::what();
-  }
+  const char* what() const noexcept override { return std::runtime_error::what(); }
 };
 
 class InvalidOperationException : public std::runtime_error {
  public:
   InvalidOperationException()
-      : std::runtime_error(
-            "Операция не соответствует режиму работы устройства.") {}
+      : std::runtime_error("Операция не соответствует режиму работы устройства.") {}
 
   InvalidOperationException(const std::string& msg) : std::runtime_error(msg) {}
 
-  const char* what() const noexcept override {
-    return std::runtime_error::what();
-  }
+  const char* what() const noexcept override { return std::runtime_error::what(); }
 };
 
 #endif  // TAPE_DEV_EXCEPTIONS
