@@ -9,14 +9,20 @@
 #include <vector>
 
 #include "ITapeDev.hpp"
-#include "TapeDevConf.hpp"
+#include "TapeDevConfig.hpp"
+
+// TODO: добавить режим работы устройства Append, при котором файл ленты
+// будет открываться только на запись, курсор будет устанавливаться в конец
+// файла, куда далее можно будет осуществлять запись новых значений.
+
+// FIXME: добавить документирующие комментарии.
 
 /// Перечисление, определяющее возможные режимы работы ленточного устройства.
-enum class TapeDevOperationMode { Read, Write, ReadWrite };
+enum class TapeDevOperationMode { Read, Write, ReadWrite, Append };
 
-class TapeDev : public ITapeDev {
+class TapeDev final : public ITapeDev {
  public:
-  TapeDev(const std::filesystem::path&, const TapeDevConf,
+  TapeDev(const std::filesystem::path&, const TapeDevConfig&,
           const TapeDevOperationMode) noexcept;
 
   /// Пытается считать значение из текущей ячейки ленты и записывает его в
@@ -29,17 +35,38 @@ class TapeDev : public ITapeDev {
   /// m_end_of_tape_flag.
   int read() override;
 
+  // FIXME: добавить документирующие комментарии.
   void write(int) override;
 
+  // FIXME: добавить документирующие комментарии.
   void shiftLeft() override;
 
+  // FIXME: добавить документирующие комментарии.
   void shiftRight() override;
 
+  // FIXME: добавить документирующие комментарии.
   void rewind() override;
+
+  // FIXME: добавить документирующие комментарии.
+  size_t getHeadPos() const noexcept;
+
+  // FIXME: добавить документирующие комментарии.
+  void replaceTape(const std::filesystem::path&, TapeDevOperationMode);
+
+  bool atStartOfTape() const noexcept;
+
+  bool atEndOfTape() const noexcept;
 
   /// Возвращает элемент буфера памяти, на который в данный момент указывает
   /// индекс буфера.
   int getMemBufCurrValue() const noexcept;
+
+  /// Возвращает элемент буфера памяти, находящийся на позиции, переданной
+  /// в качестве аргумента.
+  ///
+  /// В случае, если переданный индекс выходит за границы буфера памяти,
+  /// выбрасывает исключение std::out_of_range.
+  int getMemBufValueAt(size_t) const;
 
   /// Возвращает пару: ссылку на константный вектор, содержащий значения
   /// буфера памяти в текущем состоянии, и индекс текущей позиции в буфере.
@@ -49,42 +76,63 @@ class TapeDev : public ITapeDev {
   /// индекс текущей позиции в буфере.
   std::pair<std::vector<int>, size_t> getMemBufCopy() const noexcept;
 
+  /// Загружает в оперативную память ленточного устройства переданный массив
+  /// значений.
+  ///
+  /// Если размер переданного массива больше размера оперативной памяти
+  /// устройства, то загрузит только M первых значений (M - размер буфера
+  /// памяти устройства).
+  ///
+  /// Если размер переданного массива меньше размера буфера памяти, то в
+  /// начало буфера памяти запишет переданные значения, а оставшиеся ячейки
+  /// заполнит нулями.
+  void setMemBuf(const std::vector<int>&) noexcept;
+
+  // FIXME: добавить документирующие коментарии.
+  void resetMemBufIndex() noexcept;
+
+  size_t getDevMemBufSize() const noexcept;
+
   ~TapeDev() noexcept;
 
  private:
+  /// Выполняет сдвиг считывающей/записывающей магнитной головки на одно
+  /// значение назад (влево) на ленте. Функция нужна для метода read(), в
+  /// котором использование shiftLeft() вызывает неправильное поведение (
+  /// переполнение m_head_pos).
+  void doOneStepBackOnTape() noexcept;
+
   /// Путь к файлу ленты.
-  const std::filesystem::path m_tape_file_path;
+  std::filesystem::path m_tape_file_path;
 
   /// Объект, который хранит конфигурацию устройства.
-  const TapeDevConf m_dev_conf;
+  const TapeDevConfig m_dev_config;
 
   /// Режим работы ленточного устройства.
-  const TapeDevOperationMode m_operation_mode;
-
-  /// Файл ленты.
-  std::fstream m_tape_file;
-
-  // В данный момент по моей задумке буфер памяти будет кольцевым, то есть
-  // при достижении конца буфера, указатель будет перемещаться в начало
-  // буфера и новые значения будут перезаписывать старые.
+  TapeDevOperationMode m_operation_mode;
 
   /// Буфер памяти устройства.
+  ///
+  /// Если будет заполнен полсностью, новые значения будут перезаписывать
+  /// старые из начала.
   int* m_mem_buf;
-
-  // Так как класс std::fstream в своём состоянии хранит позицию курсора в
-  // в файле, то данное поле будет использоваться для запоминания текущей
-  // позиции в буфере.
 
   /// Текущая позиция чтения/записи в буфере памяти устройства.
   size_t m_mem_buf_index;
 
+  /// Текущая позиция считывающей/записыващей магнитной головки на ленте.
+  size_t m_head_pos;
+
   /// Флаг, указывающий на то, что считывающая/записывающая магнитная головка
   /// находится в начале ленты.
-  bool m_tape_begin_flag;
+  bool m_start_of_tape_flag;
 
   /// Флаг, указывающий на то, что считывающая/записывающая магнитная головка
   /// находится в конце ленты.
   bool m_end_of_tape_flag;
+
+  /// Файл ленты.
+  std::fstream m_tape_file;
 };
 
 #endif  // TAPE_DEV_H

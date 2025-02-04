@@ -1,3 +1,6 @@
+#ifndef TAPE_DEV_EXCEPTIONS
+#define TAPE_DEV_EXCEPTIONS
+
 #include <exception>
 #include <stdexcept>
 
@@ -34,3 +37,5 @@ class InvalidOperationException : public std::runtime_error {
     return std::runtime_error::what();
   }
 };
+
+#endif  // TAPE_DEV_EXCEPTIONS

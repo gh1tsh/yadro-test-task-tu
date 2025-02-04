@@ -1,3 +1,6 @@
+#ifndef TAPE_DEV_UTILS
+#define TAPE_DEV_UTILS
+
 #include <algorithm>
 #include <string>
 
@@ -51,3 +54,5 @@ inline std::string trim_copy(std::string s) {
   trim(s);
   return s;
 }
+
+#endif  // TAPE_DEV_UTILS
