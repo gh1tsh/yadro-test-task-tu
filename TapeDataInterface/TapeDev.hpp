@@ -22,8 +22,7 @@ enum class TapeDevOperationMode { Read, Write, ReadWrite, Append };
 
 class TapeDev final : public ITapeDev {
  public:
-  TapeDev(const std::filesystem::path&, const TapeDevConfig&,
-          const TapeDevOperationMode) noexcept;
+  TapeDev(const std::filesystem::path&, const TapeDevConfig&, const TapeDevOperationMode) noexcept;
 
   /// Пытается считать значение из текущей ячейки ленты и записывает его в
   /// текущую позицию в буфере памяти, на которое указывает m_mem_buf_index.
@@ -130,6 +129,12 @@ class TapeDev final : public ITapeDev {
   /// Флаг, указывающий на то, что считывающая/записывающая магнитная головка
   /// находится в конце ленты.
   bool m_end_of_tape_flag;
+
+  /// Флаг, показывающий совершение самой первой операции записи в файл. Нужен
+  /// для того, чтобы записать только значение и не записывать предшествующий
+  /// пробел. Этот флаг будет использоваться только в режимах
+  /// TapeDevOperationMode::Write и TapeDevOperationMode::Append.
+  bool m_first_write_flag;
 
   /// Файл ленты.
   std::fstream m_tape_file;

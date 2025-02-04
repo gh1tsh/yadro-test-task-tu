@@ -8,8 +8,7 @@
 #include "TapeDevConfig.hpp"
 #include "TapeDevExceptions.hpp"
 
-TapeDev::TapeDev(const std::filesystem::path& t_tape_file_path,
-                 const TapeDevConfig& t_dev_config,
+TapeDev::TapeDev(const std::filesystem::path& t_tape_file_path, const TapeDevConfig& t_dev_config,
                  const TapeDevOperationMode t_mode) noexcept
     : m_tape_file_path(t_tape_file_path),
       m_dev_config(t_dev_config),
@@ -18,7 +17,8 @@ TapeDev::TapeDev(const std::filesystem::path& t_tape_file_path,
       m_mem_buf_index(0),
       m_head_pos(0),
       m_start_of_tape_flag(true),
-      m_end_of_tape_flag(false) {
+      m_end_of_tape_flag(false),
+      m_first_write_flag(false) {
   // Открываем файл устройства прямо в конструкторе. Не делаем
   // дополнительных проверок на успешность операции, потому что на стадии
   // проверки и обработки аргументов командной строки гарантируем валидный
@@ -31,6 +31,11 @@ TapeDev::TapeDev(const std::filesystem::path& t_tape_file_path,
     m_tape_file.open(m_tape_file_path, std::ios::in | std::ios::out);
   } else {  // TapeDevOperationMode::Append
     m_tape_file.open(m_tape_file_path, std::ios::out | std::ios::app);
+  }
+
+  if (m_operation_mode == TapeDevOperationMode::Write ||
+      m_operation_mode == TapeDevOperationMode::Append) {
+    m_first_write_flag = true;
   }
 
   m_mem_buf = new int[m_dev_config.mem_buf_size];
@@ -103,8 +108,7 @@ int TapeDev::read() {
         if (std::isdigit(ch)) {
           cell += ch;
         } else {
-          throw BadTapeException("Недопустимый символ на ленте: '" +
-                                 std::string(1, ch) + "'.");
+          throw BadTapeException("Недопустимый символ на ленте: '" + std::string(1, ch) + "'.");
         }
       }
 
@@ -142,17 +146,18 @@ int TapeDev::read() {
         "Чтение невозможно. Устройство работает в режиме только запись.");
   }
   // Эмулируем время, необходимое устройству для выполнения чтения с ленты.
-  std::this_thread::sleep_for(
-      std::chrono::milliseconds(m_dev_config.read_delay));
+  std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.read_delay));
 }
 
 void TapeDev::write(int t_value) {
   if (m_operation_mode == TapeDevOperationMode::Write ||
       m_operation_mode == TapeDevOperationMode::Append) {
     std::string val_str = std::to_string(t_value);
-    m_tape_file << " ";
-    // TODO: нужно учесть ситуацию записи последнего значения в файл. В этом
-    // случае не нужно добавлять пробел в конце строки.
+    if (!m_first_write_flag) {
+      m_tape_file << " ";
+    } else {
+      m_first_write_flag = false;
+    }
     m_tape_file << val_str;
     m_tape_file << std::flush;
   } else if (m_operation_mode == TapeDevOperationMode::ReadWrite) {
@@ -183,8 +188,7 @@ void TapeDev::write(int t_value) {
         if (std::isdigit(ch)) {
           curr_cell += ch;
         } else {
-          throw BadTapeException("Недопустимый символ на ленте: '" +
-                                 std::string(1, ch) + "'.");
+          throw BadTapeException("Недопустимый символ на ленте: '" + std::string(1, ch) + "'.");
         }
       }
       if (!curr_cell.empty()) {
@@ -228,8 +232,7 @@ void TapeDev::write(int t_value) {
         "Запись невозможна. Устройство работает в режиме только чтение.");
   }
   // Эмулируем время, необходимое устройству для выполнения записи на ленту.
-  std::this_thread::sleep_for(
-      std::chrono::milliseconds(m_dev_config.write_delay));
+  std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.write_delay));
 }
 
 // TODO: учесть режим, в котором работает устройство. Если это Write или
@@ -281,8 +284,7 @@ void TapeDev::shiftLeft() {
   }
   // Эмулируем время, необходимое устройству для выполнения сдвига на одну
   // позицию влево.
-  std::this_thread::sleep_for(
-      std::chrono::milliseconds(m_dev_config.shift_delay));
+  std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.shift_delay));
 }
 
 // TODO: учесть режим, в котором работает устройство. Если это Write или
@@ -331,8 +333,7 @@ void TapeDev::shiftRight() {
 
   // Эмулируем время, необходимое устройству для выполнения сдвига на одну
   // позицию вправо.
-  std::this_thread::sleep_for(
-      std::chrono::milliseconds(m_dev_config.shift_delay));
+  std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.shift_delay));
 }
 
 // TODO: учесть режим, в котором работает устройство. Если это Write или
@@ -350,8 +351,7 @@ void TapeDev::rewind() {
 
   // Эмулируем время, необходимое устройству для выполнения перемотки ленты в
   // начало.
-  std::this_thread::sleep_for(
-      std::chrono::milliseconds(m_dev_config.rewind_delay));
+  std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.rewind_delay));
 }
 
 size_t TapeDev::getHeadPos() const noexcept {
@@ -374,6 +374,14 @@ void TapeDev::replaceTape(const std::filesystem::path& t_new_tape_file_path,
     m_tape_file.open(m_tape_file_path, std::ios::in | std::ios::out);
   } else {  // TapeDevOperationMode::Append
     m_tape_file.open(m_tape_file_path, std::ios::out | std::ios::app);
+  }
+
+  if (m_operation_mode == TapeDevOperationMode::Write) {
+    m_first_write_flag = true;
+  }
+
+  if (m_operation_mode == TapeDevOperationMode::Append && m_tape_file.tellp() == 0) {
+    m_first_write_flag = true;
   }
 
   // Сбрасываем флаги состояния.
@@ -402,8 +410,7 @@ int TapeDev::getMemBufCurrValue() const noexcept {
 
 int TapeDev::getMemBufValueAt(size_t t_index) const {
   if (t_index >= m_dev_config.mem_buf_size) {
-    throw std::out_of_range(
-        "Переданный индекс выходит за границы буфера памяти.");
+    throw std::out_of_range("Переданный индекс выходит за границы буфера памяти.");
   }
   return m_mem_buf[t_index];
 }
