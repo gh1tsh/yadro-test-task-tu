@@ -376,6 +376,7 @@ void TapeDev::replaceTape(const std::filesystem::path& t_new_tape_file_path,
 
   // Сбрасываем флаги состояния.
   m_tape_file.clear();
+  m_head_pos = 0;
   if (m_operation_mode == TapeDevOperationMode::Append) {
     m_start_of_tape_flag = false;
     m_end_of_tape_flag = true;
