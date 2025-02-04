@@ -150,9 +150,11 @@ void TapeDev::write(int t_value) {
   if (m_operation_mode == TapeDevOperationMode::Write ||
       m_operation_mode == TapeDevOperationMode::Append) {
     std::string val_str = std::to_string(t_value);
+    m_tape_file << " ";
     // TODO: нужно учесть ситуацию записи последнего значения в файл. В этом
     // случае не нужно добавлять пробел в конце строки.
-    m_tape_file << val_str << " ";
+    m_tape_file << val_str;
+    m_tape_file << std::flush;
   } else if (m_operation_mode == TapeDevOperationMode::ReadWrite) {
     // TODO: возможно, стоит здесь реализовать запись "по-честному",
     // используя swap-ленту.
