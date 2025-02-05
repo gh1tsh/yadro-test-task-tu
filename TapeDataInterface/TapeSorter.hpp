@@ -27,7 +27,7 @@ class TapeSorter final {
   void backward_pass();
 
   // FIXME: добавить документирующие комментарии.
-  void make_temp_tape();
+  void makeTempTape();
 
   // FIXME: добавить документирующие комментарии.
   TapeDev& m_tape_dev;

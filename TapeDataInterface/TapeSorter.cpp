@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 
+#include "TapeDevExceptions.hpp"
 #include "TapeSorter.hpp"
 
 TapeSorter::TapeSorter(TapeDev& t_tape_dev, const std::filesystem::path& t_target_tape_file_path,
@@ -33,8 +34,8 @@ void TapeSorter::sort() {
     for (size_t i = 0; i < buf_to_sort.size(); ++i) {
       try {
         m_tape_dev.write(buf_to_sort.at(i));
-      } catch (const std::exception& e) {
-        // TODO: реализовать обработку исключений.
+      } catch (const BadTapeException& e) {
+        throw e;
       }
     }
   } else {
@@ -61,9 +62,10 @@ void TapeSorter::setup() {
       m_tape_dev.read();
       num_read_values += 1;
       m_tape_dev.shiftRight();
-    } catch (const std::exception& e) {
-      // TODO: реализовать обработку всех исключений, которые могут быть
-      // выброшены из метода read().
+    } catch (const BadTapeException& e) {
+      throw e;
+    } catch (const EndOfTapeException& e) {
+      throw e;
     }
 
     if (m_tape_dev.atEndOfTape() && i <= m_tape_dev.getDevMemBufSize()) {
@@ -85,9 +87,9 @@ void TapeSorter::setup() {
       m_values_counter += num_read_values;
 
       try {
-        make_temp_tape();
-      } catch (const std::exception& e) {
-        // TODO: реализовать обработку исключений.
+        makeTempTape();
+      } catch (const std::runtime_error& e) {
+        throw e;
       }
 
       // Так как мы уже заполнили буфер памяти новыми значениями, то сначала
@@ -98,8 +100,8 @@ void TapeSorter::setup() {
       for (size_t i = 0; i < num_read_values; ++i) {
         try {
           m_tape_dev.write(buf_to_write.at(i));
-        } catch (const std::exception& e) {
-          // TODO: реализовать обработку исключений.
+        } catch (const BadTapeException& e) {
+          throw e;
         }
       }
 
@@ -125,9 +127,10 @@ void TapeSorter::setup() {
           m_tape_dev.read();
           num_read_values += 1;
           m_tape_dev.shiftRight();
-        } catch (const std::exception& e) {
-          // TODO: реализовать обработку всех исключений, которые могут быть
-          // выброшены из метода read().
+        } catch (const BadTapeException& e) {
+          throw e;
+        } catch (const EndOfTapeException& e) {
+          throw e;
         }
         if (m_tape_dev.atEndOfTape()) {
           end_of_input_tape_flag = true;
@@ -148,8 +151,10 @@ void TapeSorter::forward_pass() {
       try {
         m_tape_dev.read();
         m_tape_dev.shiftRight();
-      } catch (const std::exception& e) {
-        // TODO: реализовать обработку исключений.
+      } catch (const BadTapeException& e) {
+        throw e;
+      } catch (const EndOfTapeException& e) {
+        throw e;
       }
       if (m_tape_dev.atEndOfTape()) {
         break;
@@ -170,8 +175,8 @@ void TapeSorter::forward_pass() {
     for (size_t i = 0; i < buf_to_sort.size(); ++i) {
       try {
         m_tape_dev.write(buf_to_sort.at(i));
-      } catch (const std::exception& e) {
-        // TODO: реализовать обработку исключений.
+      } catch (const BadTapeException& e) {
+        throw e;
       }
     }
   }
@@ -206,8 +211,10 @@ void TapeSorter::backward_pass() {
 
       try {
         curr_val = m_tape_dev.read();
-      } catch (const std::exception& e) {
-        // TODO: реализовать обработку исключений.
+      } catch (const BadTapeException& e) {
+        throw e;
+      } catch (const EndOfTapeException& e) {
+        throw e;
       }
 
       if (curr_val < min_val) {
@@ -220,8 +227,8 @@ void TapeSorter::backward_pass() {
 
     try {
       m_tape_dev.write(min_val);
-    } catch (const std::exception& e) {
-      // TODO: реализовать обработку исключений.
+    } catch (const BadTapeException& e) {
+      throw e;
     }
     t -= 1;
     temp_tapes_indices.at(temp_tape_idx) += 1;
@@ -229,7 +236,7 @@ void TapeSorter::backward_pass() {
   }
 }
 
-void TapeSorter::make_temp_tape() {
+void TapeSorter::makeTempTape() {
   std::filesystem::path new_temp_tape_file_path = m_working_dir_path;
 
   new_temp_tape_file_path.append("var").append("tmp").append(

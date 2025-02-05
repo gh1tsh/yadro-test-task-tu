@@ -120,16 +120,20 @@ int TapeDev::read() {
       // при которой в конце файла будет оставлено несколько пробельных символов.
       // В этом случае код выше отработает корректно, но на данном этапе будет
       // получена пустая строка, что приведёт к ошибке преобразования.
-      //
-      // возможно, FIXME
       if (!cell.empty()) {
-        // NOTE: std::stoi может выбросить std::invalid_argument и
-        // std::out_of_range
-        m_mem_buf[m_mem_buf_index] = std::stoi(cell);
+        try {
+          m_mem_buf[m_mem_buf_index] = std::stoi(cell);
+        } catch (const std::exception& e) {
+          throw BadTapeException(
+              "Не удалось выполнить преобразование значения с ленты в целое цисло. Значение: " +
+              cell + ".");
+        }
         res = m_mem_buf[m_mem_buf_index];
         m_mem_buf_index = (m_mem_buf_index + 1) % m_dev_config.mem_buf_size;
       } else {
-        throw BadTapeException();  // ???
+        throw BadTapeException(
+            "Не удалось считать значение с ленты. Возможно, в конце файла ленты присутствуют "
+            "лишние пробелы.");
       }
 
       // Возвращаем только что считанное в память значение как результат
@@ -191,11 +195,18 @@ void TapeDev::write(int t_value) {
         }
       }
       if (!curr_cell.empty()) {
-        // NOTE: std::stoi может выбросить std::invalid_argument и
-        // std::out_of_range
-        swap.push_back(std::stoi(curr_cell));
+        try {
+          int res = std::stoi(curr_cell);
+          swap.push_back(res);
+        } catch (const std::exception& e) {
+          throw BadTapeException(
+              "Не удалось выполнить преобразование значения с ленты в целое цисло. Значение: " +
+              curr_cell + ".");
+        }
       } else {
-        throw BadTapeException();  // ???
+        throw BadTapeException(
+            "Не удалось считать значение с ленты. Возможно, в конце файла ленты присутствуют "
+            "лишние пробелы.");
       }
       if (m_tape_file.eof()) {
         break;
@@ -234,10 +245,16 @@ void TapeDev::write(int t_value) {
   std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.write_delay));
 }
 
-// TODO: учесть режим, в котором работает устройство. Если это Write или
-// Append, то операции сдвига влево/вправо и перемотки в начало не будут
-// иметь смысла.
 void TapeDev::shiftLeft() {
+  if (m_operation_mode == TapeDevOperationMode::Write) {
+    throw InvalidOperationException(
+        "В режиме работы устройств TapeDevOperationMode::Write сдвиг влево не поддерживается.");
+  }
+  if (m_operation_mode == TapeDevOperationMode::Append) {
+    throw InvalidOperationException(
+        "В режиме работы устройств TapeDevOperationMode::Append сдвиг влево не поддерживается.");
+  }
+
   // Проверяем на то, что считывающая/записывающая магнитная головка уже
   // находится в начале ленты.
   if (m_start_of_tape_flag) {
@@ -285,10 +302,16 @@ void TapeDev::shiftLeft() {
   std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.shift_delay));
 }
 
-// TODO: учесть режим, в котором работает устройство. Если это Write или
-// Append, то операции сдвига влево/вправо и перемотки в начало не будут
-// иметь смысла.
 void TapeDev::shiftRight() {
+  if (m_operation_mode == TapeDevOperationMode::Write) {
+    throw InvalidOperationException(
+        "В режиме работы устройств TapeDevOperationMode::Write сдвиг право не поддерживается.");
+  }
+  if (m_operation_mode == TapeDevOperationMode::Append) {
+    throw InvalidOperationException(
+        "В режиме работы устройств TapeDevOperationMode::Append сдвиг вправо не поддерживается.");
+  }
+
   // Проверяем на то, что считывающая/записывающая магнитная головка уже
   // находится в конце ленты.
   if (m_end_of_tape_flag) {
@@ -334,10 +357,18 @@ void TapeDev::shiftRight() {
   std::this_thread::sleep_for(std::chrono::milliseconds(m_dev_config.shift_delay));
 }
 
-// TODO: учесть режим, в котором работает устройство. Если это Write или
-// Append, то операции сдвига влево/вправо и перемотки в начало не будут
-// иметь смысла.
 void TapeDev::rewind() {
+  if (m_operation_mode == TapeDevOperationMode::Write) {
+    throw InvalidOperationException(
+        "В режиме работы устройств TapeDevOperationMode::Write перемотка ленты в начало не "
+        "поддерживается.");
+  }
+  if (m_operation_mode == TapeDevOperationMode::Append) {
+    throw InvalidOperationException(
+        "В режиме работы устройств TapeDevOperationMode::Append перемотка ленты в начало не "
+        "поддерживается.");
+  }
+
   // Очищаем возможные предыдущие ошибки ввода/вывода.
   m_tape_file.clear();
   // Устанавливаем курсоры файла ленты в начало.
@@ -372,6 +403,10 @@ void TapeDev::replaceTape(const std::filesystem::path& t_new_tape_file_path,
     m_tape_file.open(m_tape_file_path, std::ios::in | std::ios::out);
   } else {  // TapeDevOperationMode::Append
     m_tape_file.open(m_tape_file_path, std::ios::out | std::ios::app);
+  }
+
+  if (!m_tape_file.is_open()) {
+    throw BadTapeException("Не удалось отктыть файл ленты '" + m_tape_file_path.string() + "'.");
   }
 
   if (m_operation_mode == TapeDevOperationMode::Write) {
