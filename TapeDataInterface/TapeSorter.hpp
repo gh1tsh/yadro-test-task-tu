@@ -26,6 +26,8 @@ class TapeSorter final {
   // FIXME: добавить документирующие комментарии.
   void backward_pass();
 
+  void doAfterSortCleanup() noexcept;
+
   // FIXME: добавить документирующие комментарии.
   void makeTempTape();
 
@@ -39,7 +41,7 @@ class TapeSorter final {
   const std::filesystem::path m_output_tape_file_path;
 
   // FIXME: добавить документирующие комментарии.
-  const std::filesystem::path m_working_dir_path;
+  const std::filesystem::path m_data_dir_path;
 
   // FIXME: добавить документирующие комментарии.
   std::vector<std::string> m_temp_tape_file_paths;

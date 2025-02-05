@@ -8,18 +8,22 @@
 
 TapeSorter::TapeSorter(TapeDev& t_tape_dev, const std::filesystem::path& t_target_tape_file_path,
                        const std::filesystem::path& t_output_tape_file_path,
-                       const std::filesystem::path& t_working_dir_path) noexcept
+                       const std::filesystem::path& t_data_dir_path) noexcept
     : m_tape_dev(t_tape_dev),
       m_target_tape_file_path(t_target_tape_file_path),
       m_output_tape_file_path(t_output_tape_file_path),
-      m_working_dir_path(t_working_dir_path),
+      m_data_dir_path(t_data_dir_path),
       m_shortcut_flag(false),
       m_num_values_on_temp_tapes(),
       m_temp_tapes_counter(0),
       m_values_counter(0) {}
 
 void TapeSorter::sort() {
-  setup();
+  try {
+    setup();
+  } catch (const std::exception& e) {
+    throw std::runtime_error("Не удалось выполнить сортировку. Причина: " + std::string(e.what()));
+  }
 
   if (m_shortcut_flag) {
     // Копия буфера памяти устройства для сортировки со всеми значениями с
@@ -30,21 +34,39 @@ void TapeSorter::sort() {
     std::sort(buf_to_sort.begin(), buf_to_sort.end());
 
     // Пишем отсортированные значения на выходную ленту и завершаем сортировку.
-    m_tape_dev.replaceTape(m_output_tape_file_path, TapeDevOperationMode::Write);
+    try {
+      m_tape_dev.replaceTape(m_output_tape_file_path, TapeDevOperationMode::Write);
+    } catch (const BadTapeException& e) {
+      throw std::runtime_error("Не удалось выполнить сортировку. Причина: " +
+                               std::string(e.what()));
+    }
+
     for (size_t i = 0; i < buf_to_sort.size(); ++i) {
       try {
         m_tape_dev.write(buf_to_sort.at(i));
       } catch (const BadTapeException& e) {
-        throw e;
+        throw std::runtime_error("Не удалось выполнить сортировку. Причина: " +
+                                 std::string(e.what()));
       }
     }
   } else {
-    forward_pass();
-    backward_pass();
+    try {
+      forward_pass();
+      backward_pass();
+    } catch (const std::exception& e) {
+      throw std::runtime_error("Не удалось выполнить сортировку. Причина: " +
+                               std::string(e.what()));
+    }
   }
+
+  doAfterSortCleanup();
 }
 
 void TapeSorter::setup() {
+  // Если в выходном файле остались какие-либо данные, то заранее удалим их.
+  std::fstream output_tape_file(m_output_tape_file_path, std::ios::out | std::ios::trunc);
+  output_tape_file.close();
+
   m_tape_dev.resetMemBufIndex();
 
   // Количество значений, которое было считано с входной ленты в данной
@@ -236,8 +258,14 @@ void TapeSorter::backward_pass() {
   }
 }
 
+void TapeSorter::doAfterSortCleanup() noexcept {
+  for (size_t i = 0; i < m_temp_tape_file_paths.size(); ++i) {
+    std::filesystem::remove(m_temp_tape_file_paths.at(i));
+  }
+}
+
 void TapeSorter::makeTempTape() {
-  std::filesystem::path new_temp_tape_file_path = m_working_dir_path;
+  std::filesystem::path new_temp_tape_file_path = m_data_dir_path;
 
   new_temp_tape_file_path.append("var").append("tmp").append(
       "temp_tape_" + std::to_string(m_temp_tapes_counter) + ".txt");
