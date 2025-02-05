@@ -36,8 +36,8 @@ const TapeDevConfig parseTapeConfigFile(const std::filesystem::path& t_cfgFilePa
   std::string cfgOption;
 
   while (std::getline(input, cfgOption)) {
-    // если вдруг в начале/конце строки присутствуют пробельные символы,
-    // удалим их сразу
+    // Если вдруг в начале/конце строки присутствуют пробельные символы,
+    // удалим их сразу.
     int value = 0;
     try {
       if (cfgOption.empty() || stringStartsWith(cfgOption, "#")) {

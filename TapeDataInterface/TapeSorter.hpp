@@ -14,8 +14,6 @@ class TapeSorter final {
   // FIXME: добавить документирующие комментарии.
   void sort();
 
-  void debugPrintMemBuf() const noexcept;
-
   ~TapeSorter();
 
  private:
@@ -51,6 +49,8 @@ class TapeSorter final {
   /// их соритровку и запись на выходную ленту.
   bool m_shortcut_flag;
 
+  /// Вектор, который хранит количество значений, содержащихся на каждой временной
+  /// ленте после выполнения TapeSorter::setup().
   std::vector<int> m_num_values_on_temp_tapes;
 
   // FIXME: добавить документирующие комментарии.

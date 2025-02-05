@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <exception>
-#include <iostream>  // DEBUG
 #include <limits>
 #include <vector>
 
@@ -20,12 +19,6 @@ TapeSorter::TapeSorter(TapeDev& t_tape_dev, const std::filesystem::path& t_targe
 
 void TapeSorter::sort() {
   setup();
-
-  // DEBUG CODE
-  std::cout << "m_shortcut_flag: " << m_shortcut_flag << std::endl;
-  debugPrintMemBuf();
-  std::cout << std::endl;
-  // END OF DEBUG CODE
 
   if (m_shortcut_flag) {
     // Копия буфера памяти устройства для сортировки со всеми значениями с
@@ -50,19 +43,8 @@ void TapeSorter::sort() {
   }
 }
 
-void TapeSorter::debugPrintMemBuf() const noexcept {
-  std::cout << std::endl;
-  std::cout << "Memory buffer: ";
-  for (size_t i = 0; i < m_tape_dev.getDevMemBufSize(); ++i) {
-    std::cout << m_tape_dev.getMemBufValueAt(i) << " ";
-  }
-  std::cout << std::endl;
-}
-
 void TapeSorter::setup() {
   m_tape_dev.resetMemBufIndex();
-
-  debugPrintMemBuf();  // DEBUG
 
   // Количество значений, которое было считано с входной ленты в данной
   // итерации.
@@ -88,8 +70,6 @@ void TapeSorter::setup() {
       m_shortcut_flag = true;
       break;
     }
-
-    debugPrintMemBuf();  // DEBUG
   }
 
   // Если все значения из входной ленты сразу не поместились в память
@@ -103,8 +83,6 @@ void TapeSorter::setup() {
       m_num_values_on_temp_tapes.push_back(num_read_values);
 
       m_values_counter += num_read_values;
-
-      debugPrintMemBuf();  // DEBUG
 
       try {
         make_temp_tape();
@@ -133,7 +111,6 @@ void TapeSorter::setup() {
 
       // Готовимся считывать новую порцию значений с входной ленты.
       num_read_values = 0;
-
       m_tape_dev.replaceTape(m_target_tape_file_path, TapeDevOperationMode::Read);
 
       // Перемещаем считывающую/записывающую магнитную головку в позицию,
@@ -181,7 +158,7 @@ void TapeSorter::forward_pass() {
 
     std::vector<int> buf_to_sort = m_tape_dev.getMemBufCopy().first;
 
-    // Удаляем ненужные для нас значения, которые находятся в буфере.
+    // Удаляем ненужные для нас значения, которые находились в буфере.
     if (buf_to_sort.size() > m_num_values_on_temp_tapes.at(i)) {
       buf_to_sort.erase(buf_to_sort.begin() + m_num_values_on_temp_tapes.at(i), buf_to_sort.end());
     }

@@ -48,7 +48,6 @@ void TapeDev::doOneStepBackOnTape() noexcept {
   while (m_tape_file.get(ch)) {
     // двигаемся в _обратном_ направлении на один символ
     m_tape_file.seekg(-2, std::ios::cur);
-    // m_tape_file.seekp(-2, std::ios::cur); ???
 
     if (m_tape_file.tellg() == 0 && m_tape_file.tellp() == 0) {
       // Для того, чтобы оказаться ровно на пробельном символе перед целевым
@@ -256,7 +255,6 @@ void TapeDev::shiftLeft() {
   while (m_tape_file.get(ch)) {
     // двигаемся в _обратном_ направлении на один символ
     m_tape_file.seekg(-2, std::ios::cur);
-    // m_tape_file.seekp(-2, std::ios::cur); ???
 
     if (m_tape_file.tellg() == 0 && m_tape_file.tellp() == 0) {
       m_start_of_tape_flag = true;
