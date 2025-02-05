@@ -10,7 +10,7 @@
 
 struct TapeDevConfig final {
 
-  TapeDevConfig() = default;
+  TapeDevConfig();
 
   TapeDevConfig(const std::filesystem::path&, size_t, int, int, int, int);
 

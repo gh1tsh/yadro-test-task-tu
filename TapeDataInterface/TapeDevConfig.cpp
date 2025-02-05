@@ -5,6 +5,9 @@
 #include "TapeDevConfig.hpp"
 #include "utils.hpp"
 
+TapeDevConfig::TapeDevConfig()
+    : mem_buf_size(0), read_delay(0), write_delay(0), shift_delay(0), rewind_delay(0) {}
+
 TapeDevConfig::TapeDevConfig(const std::filesystem::path& t_cfg_path, size_t t_mem_buf_size,
                              int t_read_delay, int t_write_delay, int t_shift_delay,
                              int t_rewind_delay)
@@ -33,45 +36,43 @@ const TapeDevConfig parseTapeConfigFile(const std::filesystem::path& t_cfgFilePa
   }
 
   TapeDevConfig cfg;
-  std::string cfgOption;
+  std::string cfg_line;
 
-  while (std::getline(input, cfgOption)) {
+  while (std::getline(input, cfg_line)) {
     // Если вдруг в начале/конце строки присутствуют пробельные символы,
     // удалим их сразу.
     int value = 0;
     try {
-      if (cfgOption.empty() || stringStartsWith(cfgOption, "#")) {
+      if (cfg_line.empty() || stringStartsWith(cfg_line, "#")) {
         continue;
-      } else if (stringStartsWith(cfgOption, "MemoryBufferSize:")) {
-        value = std::stoi(trim_copy(splitAfterDelimiter(cfgOption)));
+      } else if (stringStartsWith(cfg_line, "MemoryBufferSize:")) {
+        value = std::stoi(trim_copy(splitAfterDelimiter(cfg_line)));
+        if (value <= 1) {
+          throw std::runtime_error("Значение 'MemoryBufferSize' должно быть больше 1.");
+        }
         cfg.mem_buf_size = value;
-      } else if (stringStartsWith(cfgOption, "TapeReadDelay:")) {
-        value = std::stoi(trim_copy(splitAfterDelimiter(cfgOption)));
+      } else if (stringStartsWith(cfg_line, "TapeReadDelay:")) {
+        value = std::stoi(trim_copy(splitAfterDelimiter(cfg_line)));
         cfg.read_delay = value;
-      } else if (stringStartsWith(cfgOption, "TapeWriteDelay:")) {
-        value = std::stoi(trim_copy(splitAfterDelimiter(cfgOption)));
+      } else if (stringStartsWith(cfg_line, "TapeWriteDelay:")) {
+        value = std::stoi(trim_copy(splitAfterDelimiter(cfg_line)));
         cfg.write_delay = value;
-      } else if (stringStartsWith(cfgOption, "TapeShiftDelay:")) {
-        value = std::stoi(trim_copy(splitAfterDelimiter(cfgOption)));
+      } else if (stringStartsWith(cfg_line, "TapeShiftDelay:")) {
+        value = std::stoi(trim_copy(splitAfterDelimiter(cfg_line)));
         cfg.shift_delay = value;
-      } else if (stringStartsWith(cfgOption, "TapeRewindDelay:")) {
-        value = std::stoi(trim_copy(splitAfterDelimiter(cfgOption)));
+      } else if (stringStartsWith(cfg_line, "TapeRewindDelay:")) {
+        value = std::stoi(trim_copy(splitAfterDelimiter(cfg_line)));
         cfg.rewind_delay = value;
       } else {
-        throw std::invalid_argument("Неизвестная опция в конфигурационном файле '" +
-                                    t_cfgFilePath.string() + "'.");
+        throw std::runtime_error("Неизвестная опция в конфигурационном файле '" +
+                                 t_cfgFilePath.string() + "': " + cfg_line + ".");
       }
     } catch (const std::invalid_argument& e) {
-      // NOTE: в этом месте можно добавить нечто вроде логирования (например,
-      // просто выводом в терминал), чтобы объяснять, что именно не так в
-      // конфигурационном файле.
       throw std::runtime_error("Недопустимое значение в конфигурационном файле '" +
-                               t_cfgFilePath.string() + "'.");
+                               t_cfgFilePath.string() + "': " + cfg_line + ".");
     } catch (const std::out_of_range& e) {
       throw std::runtime_error(
-          "Значение, указанное в конфигурационном файле, выходит за границы "
-          "типа 'unsigned' '" +
-          t_cfgFilePath.string() + "'.");
+          "Значение, указанное в конфигурационном файле, выходит за границы  типа 'int'.");
     }
   }
 
