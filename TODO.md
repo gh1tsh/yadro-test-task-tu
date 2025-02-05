@@ -16,5 +16,5 @@
 
 Сопутствующие задачи:
 - [ ] Реализовать обработку исключений.
-- [ ] Учесть TODO для методов TapeDev::shiftLeft(), TapeDev::shiftRight(), TapeDev::rewind().
+- [x] Учесть TODO для методов TapeDev::shiftLeft(), TapeDev::shiftRight(), TapeDev::rewind().
 - [ ] Оформить README.md репозитория.
