@@ -1,0 +1,6 @@
+MemoryBufferSize: 5
+TapeReadDelay: 0
+TapeWriteDelay: 0
+qwerty
+TapeShiftDelay: 0
+TapeRewindDelay: 0

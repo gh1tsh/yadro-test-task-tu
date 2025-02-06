@@ -27,6 +27,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+add_subdirectory(tests)
+
 add_executable(tapedatainterface
                 main.cpp
                 TapeDev.cpp
