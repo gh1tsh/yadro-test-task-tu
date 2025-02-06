@@ -164,79 +164,83 @@ void TapeDev::write(int t_value) {
     m_tape_file << val_str;
     m_tape_file << std::flush;
   } else if (m_operation_mode == TapeDevOperationMode::ReadWrite) {
-    // TODO: возможно, стоит здесь реализовать запись "по-честному",
-    // используя swap-ленту.
+    std::string target_value = std::to_string(t_value);
+
+    std::string swap_tape_file_name = "swap_tape.txt";
+    std::string target_tape_file_name = m_tape_file_path.filename().string();
+    std::filesystem::path target_tape_file_dir = m_tape_file_path.parent_path();
+    std::filesystem::path swap_tape_file_path = target_tape_file_dir / swap_tape_file_name;
 
     // Запоминаем текущую позицию курсора в файле.
-    std::streampos pos = m_tape_file.tellp();
+    std::streamoff pos = std::streamoff(m_tape_file.tellp());
+    if (pos != 0) {
+      pos += 1;
+    }
 
-    // Для того, чтобы корректно перезаписать значения, нам нужно сохранить
-    // "хвост" ленты.
-    std::vector<int> swap;
+    // Открываем файл "swap_tape.txt" для записи.
+    std::ofstream swap_tape_file(swap_tape_file_path, std::ios::out | std::ios::trunc);
 
     char ch;
-    std::string curr_cell;
+    std::string cell;
 
-    // Считываем все значения справа от того, которое хотим перезаписать,
-    // включая его самого.
+    m_tape_file.seekp(0, std::ios::beg);
+
     while (true) {
-      curr_cell.clear();
+      cell.clear();
       while (m_tape_file.get(ch)) {
         if (std::isspace(ch)) {
-          if (!curr_cell.empty()) {
+          if (!cell.empty()) {
             break;
           }
           continue;
         }
         if (std::isdigit(ch)) {
-          curr_cell += ch;
+          cell += ch;
         } else {
           throw BadTapeException("Недопустимый символ на ленте: '" + std::string(1, ch) + "'.");
         }
       }
-      if (!curr_cell.empty()) {
+
+      if (!cell.empty()) {
         try {
-          int res = std::stoi(curr_cell);
-          swap.push_back(res);
+          int res = std::stoi(cell);
+
+          if (swap_tape_file.tellp() == pos) {
+            swap_tape_file << target_value;
+          } else {
+            swap_tape_file << res;
+          }
+          swap_tape_file << std::flush;
         } catch (const std::exception& e) {
           throw BadTapeException(
               "Не удалось выполнить преобразование значения с ленты в целое цисло. Значение: " +
-              curr_cell + ".");
+              cell + ".");
         }
       } else {
         throw BadTapeException(
             "Не удалось считать значение с ленты. Возможно, в конце файла ленты присутствуют "
             "лишние пробелы.");
       }
+
       if (m_tape_file.eof()) {
         break;
-      }
-    }
-    swap.at(0) = t_value;
-
-    // нужно выполнить, чтобы корректно отработал seekp(...)
-    m_tape_file.clear();
-
-    // Возвращаем курсор в файле на исходную позицию.
-    m_tape_file.seekp(pos, std::ios::beg);
-
-    if (!m_start_of_tape_flag) {
-      // Сдвигаем курсор на один символ вправо, чтобы начать перезаписывать
-      // символы с целевого символа и не затереть пробел.
-      m_tape_file.seekp(1, std::ios::cur);
-    }
-
-    for (size_t i = 0; i < swap.size(); ++i) {
-      if (i == swap.size() - 1) {
-        m_tape_file << swap.at(i);
       } else {
-        m_tape_file << swap.at(i) << " ";
+        swap_tape_file << " ";
       }
     }
 
-    m_tape_file.clear();
-    // Возвращаем курсор файла в исходное положение.
-    m_tape_file.seekp(pos);
+    m_tape_file.close();
+
+    // Удаляем текущий файл ленты.
+    std::filesystem::remove(m_tape_file_path);
+
+    // Переименовываем swap-файл в текущий файл ленты.
+    std::filesystem::rename(swap_tape_file_path, m_tape_file_path);
+
+    // Открываем сформированный файл ленты.
+    m_tape_file.open(m_tape_file_path, std::ios::in | std::ios::out);
+
+    m_tape_file.seekp(pos, std::ios::beg);
   } else {
     throw InvalidOperationException(
         "Запись невозможна. Устройство работает в режиме только чтение.");
