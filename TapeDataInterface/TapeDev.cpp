@@ -327,10 +327,6 @@ void TapeDev::shiftRight() {
   }
 
   while (m_tape_file.get(ch)) {
-    if (m_tape_file.eof()) {
-      m_end_of_tape_flag = true;
-      break;
-    }
     if (!f && std::isspace(ch)) {
       continue;
     }
@@ -346,9 +342,13 @@ void TapeDev::shiftRight() {
     }
   }
 
-  // Поддерживаем состояние, при котором любая операция начинается на
-  // пробельном символе непосредственно перед целевым значением.
-  m_tape_file.seekg(-1, std::ios::cur);
+  if (m_tape_file.eof()) {
+    m_end_of_tape_flag = true;
+  } else {
+    // Поддерживаем состояние, при котором любая операция начинается на
+    // пробельном символе непосредственно перед целевым значением.
+    m_tape_file.seekg(-1, std::ios::cur);
+  }
 
   m_head_pos += 1;
 
