@@ -59,12 +59,12 @@
    
    ```bash
    # Сборка с отладочной информацией (Debug-режим)
-   cmake -DCMAKE_BUILD_TYPE=Debug ..
+   cmake -DCMAKE_BUILD_TYPE=Debug ../TapeDataInterface/
    ```
 
    ```bash
    # Сборка с оптимизациями компилятора (Release-режим)
-   cmake -DCMAKE_BUILD_TYPE=Release ..
+   cmake -DCMAKE_BUILD_TYPE=Release ../TapeDataInterface/
    ```
 
 5. Выполните сборку проекта с помощью CMake.
